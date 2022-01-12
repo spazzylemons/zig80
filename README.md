@@ -9,7 +9,7 @@ zig80 is a Z80 emulator written in Zig.
 
 ## Examples
 
-For a demo of this library, see <https://github.com/spazzylemons/zig80>
+For a demo of this library, see <https://github.com/spazzylemons/zig-pacman>
 
 ```zig
 const std = @import("std");
