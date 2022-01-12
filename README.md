@@ -7,7 +7,9 @@ zig80 is a Z80 emulator written in Zig.
 - Cycle counting
 - Support for undocumented behavior
 
-## Example
+## Examples
+
+For a demo of this library, see <https://github.com/spazzylemons/zig80>
 
 ```zig
 const std = @import("std");
