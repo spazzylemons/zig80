@@ -7,64 +7,64 @@ const Flags         = pkg.Flags;
 const Interface     = pkg.Interface;
 const InterruptMode = pkg.InterruptMode;
 
-/// The cycle counts for the main instructions, excluding cycles added by conditionally branching.
+/// The extra cycle counts for the main instructions
 const CYCLE_COUNTS = [256]u8 {
-    4, 10,  7,  6,  4,  4,  7,  4,  4, 11,  7,  6,  4,  4,  7,  4,
-    8, 10,  7,  6,  4,  4,  7,  4, 12, 11,  7,  6,  4,  4,  7,  4,
-    7, 10, 16,  6,  4,  4,  7,  4,  7, 11, 16,  6,  4,  4,  7,  4,
-    7, 10, 13,  6, 11, 11, 10,  4,  7, 11, 13,  6,  4,  4,  7,  4,
-    4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,
-    4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,
-    4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,
-    7,  7,  7,  7,  7,  7,  4,  7,  4,  4,  4,  4,  4,  4,  7,  4,
-    4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,
-    4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,
-    4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,
-    4,  4,  4,  4,  4,  4,  7,  4,  4,  4,  4,  4,  4,  4,  7,  4,
-    5, 10, 10, 10, 10, 11,  7, 11,  5, 10, 10,  4, 10, 17,  7, 11,
-    5, 10, 10, 11, 10, 11,  7, 11,  5,  4, 10, 11, 10,  4,  7, 11,
-    5, 10, 10, 19, 10, 11,  7, 11,  5,  4, 10,  4, 10,  4,  7, 11,
-    5, 10, 10,  4, 10, 11,  7, 11,  5,  6, 10,  4, 10,  4,  7, 11,
-};
-
-/// The cycle counts for the extended instructions, minus four for the prefix fetch.
-const ED_CYCLE_COUNTS = [256]u8 {
-     4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,
-     4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,
-     4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,
-     4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,
-     8,  8, 11, 16,  4, 10,  4,  5,  8,  8, 11, 16,  4, 10,  4,  5,
-     8,  8, 11, 16,  4, 10,  4,  5,  8,  8, 11, 16,  4, 10,  4,  5,
-     8,  8, 11, 16,  4, 10,  4, 14,  8,  8, 11, 16,  4, 10,  4, 14,
-     8,  8, 11, 16,  4, 10,  4,  4,  8,  8, 11, 16,  4, 10,  4,  4,
-     4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,
-     4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,
-    12, 12, 12, 12,  4,  4,  4,  4, 12, 12, 12, 12,  4,  4,  4,  4,
-    12, 12, 12, 12,  4,  4,  4,  4, 12, 12, 12, 12,  4,  4,  4,  4,
-     4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,
-     4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,
-     4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,
-     4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,
-};
-
-/// The cycle counts for the indexed instructions, minus four for the prefix fetch.
-const IZ_CYCLE_COUNTS = [256]u8 {
-     0,  0,  0,  0,  0,  0,  0,  0,  0, 11,  0,  0,  0,  0,  0,  0,
-     0,  0,  0,  0,  0,  0,  0,  0,  0, 11,  0,  0,  0,  0,  0,  0,
-     0, 10, 16,  6,  4,  4,  7,  0,  0, 11, 16,  6,  4,  4,  7,  0,
-     0,  0,  0,  0, 19, 19, 15,  0,  0, 11,  0,  0,  0,  0,  0,  0,
-     0,  0,  0,  0,  4,  4, 15,  0,  0,  0,  0,  0,  4,  4, 15,  0,
-     0,  0,  0,  0,  4,  4, 15,  0,  0,  0,  0,  0,  4,  4, 15,  0,
-     4,  4,  4,  4,  4,  4, 15,  4,  4,  4,  4,  4,  4,  4, 15,  4,
-    15, 15, 15, 15, 15, 15,  0, 15,  0,  0,  0,  0,  4,  4, 15,  0,
-     0,  0,  0,  0,  4,  4, 15,  0,  0,  0,  0,  0,  4,  4, 15,  0,
-     0,  0,  0,  0,  4,  4, 15,  0,  0,  0,  0,  0,  4,  4, 15,  0,
-     0,  0,  0,  0,  4,  4, 15,  0,  0,  0,  0,  0,  4,  4, 15,  0,
-     0,  0,  0,  0,  4,  4, 15,  0,  0,  0,  0,  0,  4,  4, 15,  0,
-     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  4,  0,  0,  0,  0,
+     0,  0,  0,  2,  0,  0,  0,  0,  0,  7,  0,  2,  0,  0,  0,  0,
+     1,  0,  0,  2,  0,  0,  0,  0,  5,  7,  0,  2,  0,  0,  0,  0,
+     0,  0,  0,  2,  0,  0,  0,  0,  0,  7,  0,  2,  0,  0,  0,  0,
+     0,  0,  0,  2,  1,  1,  0,  0,  0,  7,  0,  2,  0,  0,  0,  0,
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-     0, 10,  0, 19,  0, 11,  0,  0,  0,  4,  0,  0,  0,  0,  0,  0,
-     0,  0,  0,  0,  0,  0,  0,  0,  0,  6,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     1,  0,  0,  0,  0,  1,  0,  1,  1,  0,  0,  0,  0,  1,  0,  1,
+     1,  0,  0,  4,  0,  1,  0,  1,  1,  0,  0,  4,  0,  0,  0,  1,
+     1,  0,  0,  3,  0,  1,  0,  1,  1,  0,  0,  0,  0,  0,  0,  1,
+     1,  0,  0,  0,  0,  1,  0,  1,  1,  2,  0,  0,  0,  0,  0,  1,
+};
+
+/// The extra cycle counts for the extended instructions
+const ED_CYCLE_COUNTS = [256]u8 {
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     4,  4,  7,  0,  0,  0,  0,  1,  4,  4,  7,  0,  0,  0,  0,  1,
+     4,  4,  7,  0,  0,  0,  0,  1,  4,  4,  7,  0,  0,  0,  0,  1,
+     4,  4,  7,  0,  0,  0,  0,  4,  4,  4,  7,  0,  0,  0,  0,  4,
+     4,  4,  7,  0,  0,  0,  0,  0,  4,  4,  7,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     2,  5,  5,  5,  0,  0,  0,  0,  2,  5,  5,  5,  0,  0,  0,  0,
+     2,  5,  5,  5,  0,  0,  0,  0,  2,  5,  5,  5,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+};
+
+/// The extra cycle counts for the indexed instructions
+const IZ_CYCLE_COUNTS = [256]u8 {
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  7,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  7,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  2,  0,  0,  0,  0,  0,  7,  0,  2,  0,  0,  0,  0,
+     0,  0,  0,  0,  6,  6,  2,  0,  0,  7,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  5,  0,  0,  0,  0,  0,  0,  0,  5,  0,
+     0,  0,  0,  0,  0,  0,  5,  0,  0,  0,  0,  0,  0,  0,  5,  0,
+     0,  0,  0,  0,  0,  0,  5,  0,  0,  0,  0,  0,  0,  0,  5,  0,
+     5,  5,  5,  5,  5,  5,  0,  5,  0,  0,  0,  0,  0,  0,  5,  0,
+     0,  0,  0,  0,  0,  0,  5,  0,  0,  0,  0,  0,  0,  0,  5,  0,
+     0,  0,  0,  0,  0,  0,  5,  0,  0,  0,  0,  0,  0,  0,  5,  0,
+     0,  0,  0,  0,  0,  0,  5,  0,  0,  0,  0,  0,  0,  0,  5,  0,
+     0,  0,  0,  0,  0,  0,  5,  0,  0,  0,  0,  0,  0,  0,  5,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  3,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  2,  0,  0,  0,  0,  0,  0,
 };
 
 /// A register pair, accessible as a single word or a pair of bytes.
@@ -127,11 +127,12 @@ index_type: enum { HL, IX, IY } = .HL,
 
 cycles: u32 = 0,
 
-inline fn readByte(self: *const CPU, addr: u16) u8 {
+fn readByte(self: *CPU, addr: u16) u8 {
+    self.addCycles(3);
     return self.interface.read(addr);
 }
 
-inline fn readWord(self: *const CPU, addr: u16) u16 {
+inline fn readWord(self: *CPU, addr: u16) u16 {
     const lo = self.readByte(addr);
     const hi = self.readByte(addr +% 1);
     return word(hi, lo);
@@ -142,11 +143,12 @@ fn readWordMemPtr(self: *CPU) u16 {
     return self.readWord(self.wz -% 1);
 }
 
-inline fn writeByte(self: *const CPU, addr: u16, value: u8) void {
+fn writeByte(self: *CPU, addr: u16, value: u8) void {
+    self.addCycles(3);
     return self.interface.write(addr, value);
 }
 
-inline fn writeWord(self: *const CPU, addr: u16, value: u16) void {
+inline fn writeWord(self: *CPU, addr: u16, value: u16) void {
     self.writeByte(addr, loByte(value));
     self.writeByte(addr +% 1, hiByte(value));
 }
@@ -171,6 +173,11 @@ fn fetchByte(self: *CPU) u8 {
         self.pc +%= 1;
         return self.readByte(self.pc -% 1);
     }
+}
+
+inline fn fetchOpcode(self: *CPU) u8 {
+    self.addCycles(1);
+    return self.fetchByte();
 }
 
 inline fn fetchWord(self: *CPU) u16 {
@@ -289,11 +296,11 @@ inline fn writePairWithMemPtr(self: *CPU, pair: u16) void {
     return self.writeWord(self.wz -% 1, pair);
 }
 
-fn readHL(self: *const CPU) u8 {
+fn readHL(self: *CPU) u8 {
     return self.readByte(self.getHL());
 }
 
-fn writeHL(self: *const CPU, value: u8) void {
+fn writeHL(self: *CPU, value: u8) void {
     self.writeByte(self.getHL(), value);
 }
 
@@ -607,7 +614,7 @@ inline fn callIf(self: *CPU, condition: bool) void {
     if (condition) {
         self.push(self.pc);
         self.pc = self.wz;
-        self.addCycles(7);
+        self.addCycles(1);
     }
 }
 
@@ -619,7 +626,6 @@ fn ret(self: *CPU) void {
 inline fn retIf(self: *CPU, condition: bool) void {
     if (condition) {
         self.ret();
-        self.addCycles(6);
     }
 }
 
@@ -894,9 +900,10 @@ pub fn step(self: *CPU) void {
     self.ld_ir = false;
     switch (self.index_type) {
         .HL => if (self.halted) {
+            self.addCycles(4);
             self.main(0);
         } else {
-            self.main(self.fetchByte());
+            self.main(self.fetchOpcode());
         },
         .IX => {
             self.index_type = .HL;
@@ -1200,10 +1207,8 @@ fn main(self: *CPU, opcode: u8) void {
 /// bit opcodes (cb prefixed)
 fn bits(self: *CPU, address: u16, comptime is_indexed: bool) void {
     // fetch and refresh
-    const opcode = self.fetchByte();
+    const opcode = self.fetchOpcode();
     self.refresh();
-    // 4 cycles for instruction fetch
-    self.addCycles(4);
     // opcode parameters
     const operand = @truncate(u3, opcode);
     const bit_index = @truncate(u3, opcode >> 3);
@@ -1254,9 +1259,9 @@ fn bits(self: *CPU, address: u16, comptime is_indexed: bool) void {
     }
 
     if (is_indexed) {
-        self.addCycles(8);
+        self.addCycles(2);
     } else if (reg == &mem) {
-        self.addCycles(4);
+        self.addCycles(1);
     } else {
         return;
     }
@@ -1266,15 +1271,14 @@ fn bits(self: *CPU, address: u16, comptime is_indexed: bool) void {
         self.andFlags(~(Flags.X | Flags.Y));
         self.orFlags(hiByte(self.wz) & (Flags.X | Flags.Y));
     } else {
-        // otherwise, write memory and add three cycles
+        // otherwise, write memory
         self.writeByte(address, reg.*);
-        self.addCycles(3);
     }
 }
 
 /// indexed opcodes (ix or iy)
 fn indexed(self: *CPU, iz: *Pair) void {
-    const opcode = self.fetchByte();
+    const opcode = self.fetchOpcode();
     const old_r = self.r;
     self.refresh();
     self.addCycles(IZ_CYCLE_COUNTS[opcode]);
@@ -1385,7 +1389,7 @@ fn indexed(self: *CPU, iz: *Pair) void {
 
 /// extended opcodes (ed-prefixed)
 fn extended(self: *CPU) void {
-    const opcode = self.fetchByte();
+    const opcode = self.fetchOpcode();
     self.refresh();
     self.addCycles(ED_CYCLE_COUNTS[opcode]);
 
@@ -1498,12 +1502,12 @@ pub fn irq(self: *CPU) bool {
         },
         .Mode1 => {
             // rst 38h
-            self.addCycles(13);
+            self.addCycles(7);
             self.refresh();
             self.call(0x38);
         },
         .Mode2 => {
-            self.addCycles(19);
+            self.addCycles(7);
             self.refresh();
             const indirect = word(self.i, self.interface.irq());
             const address = self.readWord(indirect);
@@ -1522,7 +1526,7 @@ pub fn nmi(self: *CPU) bool {
     self.unhalt();
     self.irBug();
     self.refresh();
-    self.addCycles(11);
+    self.addCycles(5);
     self.iff1 = false;
     // call nmi handler
     self.call(0x66);
